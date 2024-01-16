@@ -38,8 +38,8 @@ let data = [
 app.get('/', (request, response) => {
     response.send(
         `<h1>Phonebook API</h1>` +
-        `<a href="https://render-test-5mlw.onrender.com:${PORT}/api/persons">phonebook api all</a> <p \>` +
-        `<a href="https://render-test-5mlw.onrender.com:${PORT}/info">for info click me</a>`
+        `<a href="https://render-test-5mlw.onrender.com/api/persons">phonebook api all</a> <p \>` +
+        `<a href="https://render-test-5mlw.onrender.com/info">for info click me</a>`
     )
 })
 
