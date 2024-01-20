@@ -1,10 +1,12 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 
-morgan.token('body', function (req, res) { return (req.method === 'POST' ? JSON.stringify(req.body) : " ")})
+morgan.token('body', function (req, res) { return (req.method === 'POST' ? JSON.stringify(req.body) : " ") })
 
 app.use(express.json())
 app.use(morgan(':method :url :status :res[content-length] :response-time ms :body'))
@@ -45,18 +47,22 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-    response.json(data)
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = data.find(p => p.id === id)
+    // const id = Number(request.params.id)
 
-    if (person) {
-        response.json(person)
-    } else {
-        response.status(404).end()
-    }
+    Person.findById(request.params.id).then(person => {
+        if (person) {
+            console.log('SAIJBFIUASBF')
+            response.json(person)
+        } else {
+            response.status(404).end()
+        }
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -66,7 +72,9 @@ app.delete('/api/persons/:id', (request, response) => {
     response.status(204).end()
 })
 
-const countPeople = () => { return data.length }
+const countPeople = () => { Person.find({}).then(persons => {
+    return persons.length
+}) }
 
 const checkDupe = (name) => { return (data.find(p => p.name === name)) }
 
@@ -91,15 +99,16 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    const person = {
-        id: Math.floor(Math.random() * 100000),
+    const person = new Person({
         name: body.name,
         number: body.number
-    }
+    })
 
     data = data.concat(person)
 
-    response.json(person)
+    person.save().then(savedPerson => {
+        response.json(savedPerson)
+    })
 })
 
 
