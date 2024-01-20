@@ -3,6 +3,7 @@ const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
+const errorHandler = require('./errorHandler')
 const app = express()
 const PORT = process.env.PORT
 
@@ -12,6 +13,7 @@ app.use(express.json())
 app.use(morgan(':method :url :status :res[content-length] :response-time ms :body'))
 app.use(cors())
 app.use(express.static('dist'))
+app.use(errorHandler)
 
 let data = [
     {
@@ -52,36 +54,43 @@ app.get('/api/persons', (request, response) => {
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
-    // const id = Number(request.params.id)
+app.get('/api/persons/:id', (request, response, next) => {
+    Person.findById(request.params.id)
+        .then(person => {
+            if (person) {
+                response.json(person)
+            } else {
+                response.status(404).end()
+            }
+        })
+        .catch(error => { next(error) })
+})
 
-    Person.findById(request.params.id).then(person => {
-        if (person) {
-            console.log('SAIJBFIUASBF')
-            response.json(person)
-        } else {
-            response.status(404).end()
-        }
+app.delete('/api/persons/:id', (request, response, next) => {
+    Person.findByIdAndDelete(request.params.id)
+        .then(result => {
+            response.status(204).end()
+        })
+        .catch(error => next(error))
+})
+
+const checkDupe = (name) => {
+    Person.find({}).then(persons => {
+        return persons.find(p => p.name === name)
     })
-})
-
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    data = data.filter(p => p.id !== id)
-
-    response.status(204).end()
-})
-
-const countPeople = () => { Person.find({}).then(persons => {
-    return persons.length
-}) }
-
-const checkDupe = (name) => { return (data.find(p => p.name === name)) }
+}
 
 app.get('/info', (request, response) => {
-    response.send(
-        `Phonebook has info for ${String(countPeople())} people <p \>${new Date()}`
-    )
+    Person.find({})
+        .then(persons => {
+            counter = persons.length
+            return counter
+        })
+        .then((counter) => {
+            response.send(
+                `Phonebook has info for ${String(counter)} people <p \>${new Date()}`
+            )
+        })
 })
 
 app.post('/api/persons', (request, response) => {
@@ -109,6 +118,22 @@ app.post('/api/persons', (request, response) => {
     person.save().then(savedPerson => {
         response.json(savedPerson)
     })
+})
+
+// code for put update number; not in use because number change was different skip for now
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+
+    const person = new Person({
+        name: body.name,
+        number: body.number
+    })
+
+    Person.findByIdAndUpdate(request.params.id, note, { new: true })
+        .then(updatedPerson => {
+            response.json(updatedPerson)
+        })
+        .catch(error => next(error))
 })
 
 
